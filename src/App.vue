@@ -47,12 +47,6 @@ export default {
       });
     },
     requestSignature() {
-      const rpcProvider = window.mathExtension.httpProvider(
-        "https://www.okex.com/okchain/v1"
-      );
-      rpcProvider.get("/node_info").then(info => {
-        console.log(info);
-      });
       const transaction = {
         account_number: "2741",
         chain_id: "okchain",

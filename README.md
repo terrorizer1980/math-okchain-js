@@ -6,6 +6,7 @@
 
 ```
 // config network
+var netwo/Users/Forrest/Documents/GitHub/math-okchain-js/README.mdrk = {
     blockchain: "okchain",
     chainId: "okchain"
 };
@@ -22,7 +23,11 @@ mathExtension.requestSignature(transaction,network)
 
 For details, please find the sample in this repo.
 
-
+### Running Examples 运行示例
+```
+npm i
+npm run serve
+```
 ### Download Math Wallet 麦子钱包下载
 
 [http://mathwallet.org](http://mathwallet.org)
