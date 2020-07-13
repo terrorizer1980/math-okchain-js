@@ -6,7 +6,6 @@
 
 ```
 // config network
-var network = {
     blockchain: "okchain",
     chainId: "okchain"
 };
