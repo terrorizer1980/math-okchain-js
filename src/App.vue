@@ -79,7 +79,7 @@ export default {
       };
       // 请求插件签名
       window.mathExtension
-        .requestSignature(transaction, this.network)
+        .requestSignature(transaction)
         .then(signatrue => {
           this.signature = signatrue;
         })
