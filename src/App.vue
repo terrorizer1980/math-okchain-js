@@ -1,8 +1,8 @@
 <template>
-  <v-app class="my-0">
-    <v-navigation-drawer color="primary" dark permanent app>
-      <v-list nav class="py-0 text-start">
-        <v-list-item two-line class="px-0">
+  <v-app>
+    <v-navigation-drawer v-model="isDrawer" color="primary" dark permanent app>
+      <v-list class="py-0 text-start">
+        <v-list-item two-line class="px-3">
           <v-list-item-avatar>
             <img src="./assets/okchain.jpg" />
           </v-list-item-avatar>
@@ -19,8 +19,13 @@
           </v-list-item-content>
         </v-list-item>
         <v-divider></v-divider>
-        <v-list-item-group>
-          <v-list-item v-for="tab in tabs" :key="tab.title" link @click="tabClick(tab)">
+        <v-list-item-group v-model="selectedTabIndex">
+          <v-list-item
+            v-for="(tab,index) in tabs"
+            :key="tab.title"
+            link
+            @click="tabClick(tab,index)"
+          >
             <v-list-item-icon>
               <v-icon>{{ tab.icon }}</v-icon>
             </v-list-item-icon>
@@ -33,11 +38,15 @@
       </v-list>
       <template v-slot:append>
         <div class="pa-2" v-if="identity">
-          <v-btn block color="error" @click="logout">Logout</v-btn>
+          <v-btn block color="dark" @click="logout">Logout</v-btn>
         </div>
       </template>
     </v-navigation-drawer>
-    <v-main>
+    <v-app-bar color="light" dense app flat>
+      <v-icon color="primary">mdi-menu</v-icon>
+      <strong class="title primary--text">{{tabs[selectedTabIndex].title}}</strong>
+    </v-app-bar>
+    <v-main style="padding-top:0px;">
       <v-container fluid>
         <router-view></router-view>
       </v-container>
@@ -68,6 +77,7 @@ export default {
           name: RouteNames.ORDERS
         }
       ],
+      selectedTabIndex: 0,
       network: {
         blockchain: "okchain",
         chainId: "okchain"
@@ -77,6 +87,10 @@ export default {
   },
   methods: {
     login() {
+      if (!window.mathExtension) {
+        alert("Please install MathWallet first!");
+        return;
+      }
       window.mathExtension.getIdentity(this.network).then(identity => {
         this.identity = identity;
         // Set Store
@@ -90,7 +104,8 @@ export default {
         this[Actions.SET_IDENTITY](null);
       });
     },
-    tabClick(tab) {
+    tabClick(tab, index) {
+      this.selectedTabIndex = index;
       if (this.$route.name != tab.name) {
         this.$router.push({ name: tab.name });
       }

@@ -13,7 +13,7 @@ export const RouteNames = {
 export default new VueRouter({
     routes: [
         {
-            path: "/transfer",
+            path: "/",
             name: RouteNames.TRANSFER,
             component: Transfer
         },

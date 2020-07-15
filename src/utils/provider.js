@@ -20,15 +20,41 @@ export default class RPCProvider {
             }
         });
     }
+
     authAccount(address) {
         return this.reqeust("get", `/auth/accounts/${address}`).then(response => {
             return response.value;
         });
     }
 
+    allTradingPairs() {
+        return this.reqeust("get", "products").then(response => {
+            if (response.code == 0) {
+                return response.data;
+            } else {
+                throw response.msg;
+            }
+        });
+    }
+
+    marketDepthBook(tradingPair) {
+        return this.reqeust("get", `/order/depthbook?product=${tradingPair}`).then(response => {
+            if (response.code == 0) {
+                return response.data;
+            } else {
+                throw response.msg;
+            }
+        });
+    }
+
     txs(signedTx) {
-        return this.reqeust("post", "/txs?sync=true", signedTx).then(response => {
-            console.log(response);
+        const opts = {
+            data: signedTx,
+            headers: {
+                "Content-Type": "text/plain"
+            }
+        };
+        return this.reqeust("post", "/txs?sync=true", null, opts).then(response => {
             return response;
         });
     }

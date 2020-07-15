@@ -1,7 +1,7 @@
 <template>
-  <v-card class="mx-auto" v-if="identity">
+  <v-card class="mx-auto" :disabled="!identity">
     <v-card-text>
-      <v-select :items="items" v-model="selectedItem" label="Select A Token" return-object filled></v-select>
+      <v-select :items="tokens" v-model="selectedToken" label="Select A Token" return-object filled></v-select>
       <v-text-field
         v-model="recipient"
         label="recipient"
@@ -11,7 +11,7 @@
       <v-text-field
         v-model="amount"
         label="Amount"
-        :hint="selectedItem?`Available ${selectedItem.value}`:''"
+        :hint="selectedToken?`Available ${selectedToken.value}`:''"
         placeholder="0"
         persistent-hint
         filled
@@ -19,7 +19,12 @@
     </v-card-text>
     <v-card-actions class="mx-2">
       <v-spacer />
-      <v-btn color="primary" block @click="transfer()">Send</v-btn>
+      <v-btn
+        color="primary"
+        block
+        @click="transfer()"
+        :disabled="!identity"
+      >{{identity?"Send":"Please login first"}}</v-btn>
       <v-spacer />
     </v-card-actions>
     <v-snackbar
@@ -28,35 +33,44 @@
       :color="snackbarColor"
       top
     >{{ snackbarText }}</v-snackbar>
+    <v-overlay :value="processing">
+      <v-progress-circular indeterminate size="64"></v-progress-circular>
+    </v-overlay>
   </v-card>
-  <h2 v-else>Please login first</h2>
 </template>
 
 <script>
 import RPCProvider from "../utils/provider";
 import { mapActions, mapGetters, mapState } from "vuex";
+import { parseAmount, formatAmount } from "../utils/Format";
 
 export default {
   name: "Transfer",
   data() {
     return {
+      processing: false,
       showSnackbar: false,
       snackbarText: "",
       snackbarColor: "success",
       snackbarTimeout: 2000,
       rpcURL: "https://okex.maiziqianbao.net/okchain/v1",
       provider: null,
-      items: [],
-      selectedItem: null,
-      recipient: "okchain1223de5pg4sx7lrmmj7ylc9c4gcep7nf5k502rv",
-      amount: "1.00000000"
+      tokens: [
+        { text: "tokt", value: "0", decimal: 8 },
+        { text: "tokb", value: "0", decimal: 8 },
+        { text: "tbtc", value: "0", decimal: 8 },
+        { text: "tusdk", value: "0", decimal: 8 }
+      ],
+      selectedToken: null,
+      recipient: "",
+      amount: ""
     };
   },
   computed: {
     ...mapState(["identity"])
   },
   watch: {
-    identity(value) {
+    identity(newIdentity) {
       // Balance
       this.getBalance();
     }
@@ -64,20 +78,30 @@ export default {
   mounted() {
     // RPC Provider
     this.provider = new RPCProvider(this.rpcURL);
+    // Token
+    this.selectedToken = this.tokens[0];
     // Balance
-    if (this.identity) {
+    this.getBalance();
+    setInterval(() => {
       this.getBalance();
-    }
+    }, 6000);
   },
   methods: {
     getBalance() {
+      if (!this.identity) return;
       this.provider
         .getBalace(this.identity.account)
         .then(tokens => {
-          this.items = tokens.map(token => {
-            return { text: token.symbol, value: token.available };
+          this.tokens = this.tokens.map(token => {
+            let t = tokens.find(t => t.symbol === token.text);
+            if (t) {
+              token.value = t.available;
+            }
+            return token;
           });
-          this.selectedItem = this.items.length > 0 ? this.items[0] : null;
+          this.selectedToken = this.tokens.find(
+            t => t.text === this.selectedToken.text
+          );
         })
         .catch(e => {
           this.showSnackbar = true;
@@ -147,11 +171,15 @@ export default {
         return;
       }
       // Transaction
+      this.processing = true;
       this.createTransaction(
         this.identity.account,
         this.recipient,
-        this.selectedItem.text,
-        this.amount
+        this.selectedToken.text,
+        formatAmount(
+          parseAmount(this.amount, this.selectedToken.decimal),
+          this.selectedToken.decimal
+        )
       )
         .then(transaction => {
           // Signature & Send
@@ -160,23 +188,27 @@ export default {
             .then(signatrue => {
               this.sendTransaction(transaction, signatrue)
                 .then(res => {
+                  this.processing = false;
                   this.showSnackbar = true;
                   this.snackbarText = "Success";
                   this.snackbarColor = "success";
                 })
                 .catch(e => {
+                  this.processing = false;
                   this.showSnackbar = true;
                   this.snackbarText = e.message || "Unknow error";
                   this.snackbarColor = "error";
                 });
             })
             .catch(e => {
+              this.processing = false;
               this.showSnackbar = true;
               this.snackbarText = e.message || "Unknow error";
               this.snackbarColor = "error";
             });
         })
         .catch(e => {
+          this.processing = false;
           this.showSnackbar = true;
           this.snackbarText = e.message || "Unknow error";
           this.snackbarColor = "error";
